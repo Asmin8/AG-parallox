@@ -1,4 +1,6 @@
+// api/chat.js
 export default async function handler(req, res) {
+  // Only allow POST
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
@@ -6,28 +8,42 @@ export default async function handler(req, res) {
   try {
     const { message, ai } = req.body;
 
+    if (!message) {
+      return res.status(400).json({ error: "Message is required" });
+    }
+
+    // Multi-AI config
     const AIs = {
       fiesta: {
         key: process.env.AI1_KEY,
-        system: "Fun energetic AI with fiesta vibe"
+        system: "You are AG Parallox Fiesta AI: fun, energetic, playful, and chatty."
       },
       coder: {
         key: process.env.AI2_KEY,
-        system: "Expert coding AI"
+        system: "You are AG Parallox Coder AI: professional coding assistant, concise and helpful."
       },
       guru: {
         key: process.env.AI3_KEY,
-        system: "Deep philosophical AI"
+        system: "You are AG Parallox Guru AI: philosophical, wise, and calm."
       }
     };
 
-    const bot = AIs[ai] || AIs.fiesta;
+    const bot = AIs[ai];
 
-    const r = await fetch("https://api.openai.com/v1/chat/completions", {
+    if (!bot) {
+      return res.status(400).json({ error: "AI not found" });
+    }
+
+    if (!bot.key) {
+      return res.status(500).json({ error: `API key for ${ai} not set in environment variables` });
+    }
+
+    // Call OpenAI API
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${bot.key}`
+        "Authorization": `Bearer ${bot.key}`
       },
       body: JSON.stringify({
         model: "gpt-4o-mini",
@@ -38,10 +54,18 @@ export default async function handler(req, res) {
       })
     });
 
-    const data = await r.json();
-    res.status(200).json({ reply: data.choices[0].message.content });
+    if (!response.ok) {
+      const text = await response.text();
+      return res.status(response.status).json({ error: `OpenAI API error: ${text}` });
+    }
+
+    const data = await response.json();
+    const reply = data?.choices?.[0]?.message?.content || "No reply from AI";
+
+    return res.status(200).json({ reply });
 
   } catch (err) {
-    res.status(500).json({ reply: "Server error" });
+    console.error("Server error:", err);
+    return res.status(500).json({ error: "Internal server error", details: err.message });
   }
 }
