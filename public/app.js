@@ -1,32 +1,50 @@
 const chatDiv = document.getElementById("chat");
+const input = document.getElementById("msg");
+const aiSelect = document.getElementById("aiSelect");
 
-function add(role, text) {
-  const d = document.createElement("div");
-  d.className = "msg " + role;
-  d.innerText = text;
-  chatDiv.appendChild(d);
+function addMessage(role, text) {
+  const div = document.createElement("div");
+  div.className = `msg ${role}`;
+  div.innerText = text;
+  chatDiv.appendChild(div);
   chatDiv.scrollTop = chatDiv.scrollHeight;
 }
 
 async function send() {
-  const input = document.getElementById("msg");
-  const ai = document.getElementById("aiSelect").value;
-  const text = input.value;
+  const message = input.value.trim();
+  if (!message) return;
 
-  if (!text) return;
-  add("user", text);
+  const ai = aiSelect.value;
+
+  // Add user message
+  addMessage("user", message);
   input.value = "";
 
-  add("ai", "Typing...");
+  // Show typing
+  addMessage("ai", "Typing...");
 
-const res = await fetch("/api/chat", {
-    method: "POST",
-    headers: {"Content-Type":"application/json"},
-    body: JSON.stringify({ message: text, ai })
-});
+  try {
+    const res = await fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message, ai })
+    });
 
+    const data = await res.json();
 
-  const data = await res.json();
-  chatDiv.lastChild.remove();
-  add("ai", data.reply);
+    // Remove typing message
+    chatDiv.lastChild.remove();
+
+    if (data.reply) {
+      addMessage("ai", data.reply);
+    } else if (data.error) {
+      addMessage("ai", `Error: ${data.error}`);
+    } else {
+      addMessage("ai", "Unknown error occurred");
+    }
+
+  } catch (err) {
+    chatDiv.lastChild.remove();
+    addMessage("ai", `Network error: ${err.message}`);
+  }
 }
