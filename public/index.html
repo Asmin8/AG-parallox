@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>AG Parallox</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="bg"></div>
+
+<div class="app">
+  <header>
+    <h1>AG Parallox</h1>
+    <select id="aiSelect">
+      <option value="fiesta">Fiesta AI</option>
+      <option value="coder">Coder AI</option>
+      <option value="guru">Guru AI</option>
+    </select>
+  </header>
+
+  <div id="chat"></div>
+
+  <div class="inputArea">
+    <input id="msg" placeholder="Ask anything..." />
+    <button onclick="send()">Send</button>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
